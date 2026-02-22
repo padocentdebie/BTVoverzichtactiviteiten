@@ -1,58 +1,186 @@
-<div class="filter-bar">
-    <button onclick="filterLessen('all')">Alles</button>
-    <button onclick="filterLessen('Theorie')" style="border-left: 4px solid #3182ce;">Theorie</button>
-    <button onclick="filterLessen('Oefening')" style="border-left: 4px solid #27ae60;">Oefeningen</button>
-    <button onclick="filterLessen('Project')" style="border-left: 4px solid #f1c40f;">Projecten</button>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub & Firebase Manager</title>
+    <style>
+        :root { --primary: #f57c00; --blue: #3182ce; --green: #27ae60; --dark: #1a202c; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* Het Invoergedeelte */
+        .admin-panel { background: #fff3e0; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #ffe0b2; }
+        .input-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .input-url { flex-grow: 2; }
+        .input-nr { width: 60px; }
+        button#addBtn { background: var(--primary); color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        
+        /* Filters */
+        .filters { margin-bottom: 20px; display: flex; gap: 10px; }
+        .filter-btn { padding: 8px 15px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 20px; font-size: 13px; }
+        .filter-btn.active { background: var(--dark); color: white; }
+
+        /* Tabel Styling */
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th { background: var(--dark); color: white; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #edf2f7; }
+        .tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .tag-theorie { background: #ebf8ff; color: var(--blue); }
+        .tag-oefening { background: #f0fff4; color: var(--green); }
+        .tag-project { background: #fffaf0; color: #b7791f; }
+
+        /* Modal voor Code */
+        #codeModal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
+        .modal-content { background: #1e1e1e; color: #d4d4d4; margin: 2% auto; padding: 20px; width: 90%; max-height: 90vh; overflow: auto; border-radius: 8px; font-family: 'Consolas', monospace; }
+        .close { color: white; float: right; cursor: pointer; font-size: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Mijn HTML Portfolio Manager</h1>
+    
+    <div class="admin-panel">
+        <h3>Nieuwe Les Toevoegen</h3>
+        <div class="input-row">
+            <input type="number" id="lesNr" class="input-nr" placeholder="Nr.">
+            <input type="text" id="githubUrl" class="input-url" placeholder="Plak hier de GitHub URL (bijv. .../blob/main/les.html)">
+            <select id="werkvorm">
+                <option value="Theorie">Theorie</option>
+                <option value="Oefening">Oefening</option>
+                <option value="Project">Project</option>
+            </select>
+            <button id="addBtn">Scan & Voeg Toe</button>
+        </div>
+    </div>
+
+    <div class="filters">
+        <button class="filter-btn active" onclick="filterData('all')">Alles</button>
+        <button class="filter-btn" onclick="filterData('Theorie')">Theorie</button>
+        <button class="filter-btn" onclick="filterData('Oefening')">Oefeningen</button>
+        <button class="filter-btn" onclick="filterData('Project')">Projecten</button>
+    </div>
+
+    <table id="lessonTable">
+        <thead>
+            <tr>
+                <th>Nr.</th>
+                <th>Onderwerp</th>
+                <th>Werkvorm</th>
+                <th>Actie</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
 </div>
 
-<style>
-    .filter-bar { margin-bottom: 20px; display: flex; gap: 10px; }
-    .filter-bar button { 
-        background: white; border: 1px solid #ddd; padding: 8px 15px; 
-        cursor: pointer; border-radius: 4px; transition: 0.3s;
-    }
-    .filter-bar button:hover { background: #f0f0f0; }
-    
-    /* Werkvorm-specifieke stijlen */
-    .row-theorie { border-left: 5px solid #3182ce; }
-    .row-oefening { border-left: 5px solid #27ae60; }
-    .row-project { border-left: 5px solid #f1c40f; }
-</style>
+<div id="codeModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle">Code Preview</h2>
+        <hr>
+        <pre id="codeArea"></pre>
+    </div>
+</div>
 
 <script type="module">
-  // ... (bestaande Firebase import)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-  // Aangepaste render functie met sortering
-  function renderTable(data) {
+  const firebaseConfig = {
+    apiKey: "AIzaSyA3_rzoZOWytlyAbYKKe_WuFlD8z2WvbX4",
+    authDomain: "aangifteq2les1.firebaseapp.com",
+    databaseURL: "https://aangifteq2les1-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "aangifteq2les1",
+    storageBucket: "aangifteq2les1.firebasestorage.app",
+    messagingSenderId: "1071661084879",
+    appId: "1:1071661084879:web:ec81dfed806ad75a8847ba"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const lessonsRef = ref(db, 'lessen');
+
+  // Toevoegen aan Firebase
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    const url = document.getElementById('githubUrl').value;
+    const nr = document.getElementById('lesNr').value;
+    const vorm = document.getElementById('werkvorm').value;
+
+    if(!url || !nr) return alert("Vul een nummer en URL in!");
+
+    // GitHub Link omzetten naar RAW
+    const rawUrl = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+
+    try {
+      const response = await fetch(rawUrl);
+      const code = await response.text();
+      const titleMatch = code.match(/<title>(.*?)<\/title>/);
+      const title = titleMatch ? titleMatch[1] : "Naamloze Les";
+
+      push(lessonsRef, {
+        nr: parseInt(nr),
+        title: title,
+        type: vorm,
+        code: code,
+        url: url
+      });
+
+      document.getElementById('githubUrl').value = "";
+      document.getElementById('lesNr').value = "";
+    } catch (e) {
+      alert("Fout: Kon de code niet van GitHub lezen. Is de repo publiek?");
+    }
+  });
+
+  // Data ophalen en tonen (gesorteerd op nummer)
+  onValue(lessonsRef, (snapshot) => {
+    const data = snapshot.val();
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = "";
 
-    // Zet object om naar array en sorteer op volgorde (indien aanwezig)
-    const sortedLessons = Object.values(data).sort((a, b) => (a.volgorde || 0) - (b.volgorde || 0));
+    if (data) {
+      const items = Object.values(data).sort((a, b) => a.nr - b.nr);
+      items.forEach(item => {
+        const row = tableBody.insertRow();
+        row.setAttribute('data-type', item.type);
+        row.innerHTML = `
+          <td>${item.nr}</td>
+          <td><strong>${item.title}</strong></td>
+          <td><span class="tag tag-${item.type.toLowerCase()}">${item.type}</span></td>
+          <td>
+            <button onclick="openCode(\`${encodeURIComponent(item.code)}\`, '${item.title}')">Bekijk Code</button>
+            <a href="${item.url}" target="_blank" style="margin-left:10px;">GitHub</a>
+          </td>
+        `;
+      });
+    }
+  });
 
-    sortedLessons.forEach(lesson => {
-      const row = document.createElement('tr');
-      row.className = `row-${lesson.type.toLowerCase()}`; // Automatische kleur per type
-      row.innerHTML = `
-        <td><strong>${lesson.volgorde || '-'}</strong></td>
-        <td><strong>${lesson.title}</strong></td>
-        <td><span class="tag">${lesson.type}</span></td>
-        <td>${lesson.inhoud}</td>
-        <td><button onclick="viewCode(...)">Code</button></td>
-      `;
-      tableBody.appendChild(row);
-    });
-  }
+  // Global scope functies voor knoppen
+  window.openCode = (encoded, title) => {
+    document.getElementById('codeArea').textContent = decodeURIComponent(encoded);
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('codeModal').style.display = "block";
+  };
+</script>
 
-  // Filter functie
-  window.filterLessen = (type) => {
+<script>
+  function closeModal() { document.getElementById('codeModal').style.display = "none"; }
+  
+  function filterData(type) {
     const rows = document.querySelectorAll('#tableBody tr');
     rows.forEach(row => {
-      if (type === 'all' || row.classList.contains(`row-${type.toLowerCase()}`)) {
-        row.style.display = "";
-      } else {
-        row.style.display = "none";
-      }
+      row.style.display = (type === 'all' || row.getAttribute('data-type') === type) ? "" : "none";
     });
+    // Update active button state
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
   }
 </script>
+
+</body>
+</html>
