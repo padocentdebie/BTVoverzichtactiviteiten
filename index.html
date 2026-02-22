@@ -1,151 +1,58 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase GitHub Tracker</title>
-    <style>
-        :root { --primary: #f57c00; --dark: #2c3e50; --bg: #f4f7f9; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        
-        .input-group { display: flex; gap: 10px; margin-bottom: 30px; padding: 20px; background: #fff3e0; border-radius: 8px; }
-        input { flex-grow: 1; padding: 12px; border: 1px solid #ffcc80; border-radius: 6px; }
-        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th { background: var(--dark); color: white; padding: 15px; text-align: left; }
-        td { padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; }
-
-        /* Modal voor Code */
-        #codeModal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-        .modal-content { background: #1e1e1e; color: #d4d4d4; margin: 5% auto; padding: 25px; width: 85%; border-radius: 10px; max-height: 80vh; overflow: auto; }
-        pre { white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 13px; }
-        .close { color: white; float: right; cursor: pointer; font-size: 28px; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>🚀 Mijn Leerpad Tracker</h1>
-    <p>Voeg een GitHub URL toe om de les automatisch te scannen en op te slaan in Firebase.</p>
-
-    <div class="input-group">
-        <input type="text" id="githubUrl" placeholder="https://github.com/gebruiker/repo/blob/main/index.html">
-        <button id="addBtn">Voeg Les Toe</button>
-    </div>
-
-    <table id="lessonTable">
-        <thead>
-            <tr>
-                <th>Onderwerp</th>
-                <th>Inhoud</th>
-                <th>Vorm</th>
-                <th>Acties</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-            </tbody>
-    </table>
+<div class="filter-bar">
+    <button onclick="filterLessen('all')">Alles</button>
+    <button onclick="filterLessen('Theorie')" style="border-left: 4px solid #3182ce;">Theorie</button>
+    <button onclick="filterLessen('Oefening')" style="border-left: 4px solid #27ae60;">Oefeningen</button>
+    <button onclick="filterLessen('Project')" style="border-left: 4px solid #f1c40f;">Projecten</button>
 </div>
 
-<div id="codeModal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle">Broncode</h3>
-        <hr>
-        <pre id="codeArea"></pre>
-    </div>
-</div>
+<style>
+    .filter-bar { margin-bottom: 20px; display: flex; gap: 10px; }
+    .filter-bar button { 
+        background: white; border: 1px solid #ddd; padding: 8px 15px; 
+        cursor: pointer; border-radius: 4px; transition: 0.3s;
+    }
+    .filter-bar button:hover { background: #f0f0f0; }
+    
+    /* Werkvorm-specifieke stijlen */
+    .row-theorie { border-left: 5px solid #3182ce; }
+    .row-oefening { border-left: 5px solid #27ae60; }
+    .row-project { border-left: 5px solid #f1c40f; }
+</style>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  // ... (bestaande Firebase import)
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyA3_rzoZOWytlyAbYKKe_WuFlD8z2WvbX4",
-    authDomain: "aangifteq2les1.firebaseapp.com",
-    databaseURL: "https://aangifteq2les1-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "aangifteq2les1",
-    storageBucket: "aangifteq2les1.firebasestorage.app",
-    messagingSenderId: "1071661084879",
-    appId: "1:1071661084879:web:ec81dfed806ad75a8847ba"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const lessonsRef = ref(db, 'lessen');
-
-  // 1. Luisteren naar updates uit Firebase
-  onValue(lessonsRef, (snapshot) => {
-    const data = snapshot.val();
+  // Aangepaste render functie met sortering
+  function renderTable(data) {
     const tableBody = document.getElementById('tableBody');
-    tableBody.innerHTML = ""; // Leeg de tabel voor herladen
-    
-    if (data) {
-      Object.keys(data).forEach(key => {
-        const lesson = data[key];
-        renderRow(lesson);
-      });
-    }
-  });
+    tableBody.innerHTML = "";
 
-  // 2. Les toevoegen functie
-  document.getElementById('addBtn').addEventListener('click', async () => {
-    const url = document.getElementById('githubUrl').value;
-    if(!url) return alert("Plak een link!");
+    // Zet object om naar array en sorteer op volgorde (indien aanwezig)
+    const sortedLessons = Object.values(data).sort((a, b) => (a.volgorde || 0) - (b.volgorde || 0));
 
-    const rawUrl = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
-
-    try {
-      const response = await fetch(rawUrl);
-      const code = await response.text();
-      
-      const titleMatch = code.match(/<title>(.*?)<\/title>/);
-      const title = titleMatch ? titleMatch[1] : "Nieuwe Les";
-      
-      const newLesson = {
-        title: title,
-        inhoud: "Gescand via GitHub",
-        werkwijze: "Automatische import",
-        code: code,
-        url: url,
-        type: "Oefening"
-      };
-
-      push(lessonsRef, newLesson);
-      document.getElementById('githubUrl').value = "";
-    } catch (e) {
-      alert("Fout bij ophalen GitHub code.");
-    }
-  });
-
-  function renderRow(lesson) {
-    const tableBody = document.getElementById('tableBody');
-    const row = tableBody.insertRow();
-    row.innerHTML = `
-      <td><strong>${lesson.title}</strong></td>
-      <td>${lesson.inhoud}</td>
-      <td><span style="background:#eee; padding:3px 8px; border-radius:4px;">${lesson.type}</span></td>
-      <td>
-        <button onclick="viewCode(\`${encodeURIComponent(lesson.code)}\`, '${lesson.title}')" style="background:#0366d6; padding:5px 10px; font-size:12px;">Bekijk Code</button>
-      </td>
-    `;
+    sortedLessons.forEach(lesson => {
+      const row = document.createElement('tr');
+      row.className = `row-${lesson.type.toLowerCase()}`; // Automatische kleur per type
+      row.innerHTML = `
+        <td><strong>${lesson.volgorde || '-'}</strong></td>
+        <td><strong>${lesson.title}</strong></td>
+        <td><span class="tag">${lesson.type}</span></td>
+        <td>${lesson.inhoud}</td>
+        <td><button onclick="viewCode(...)">Code</button></td>
+      `;
+      tableBody.appendChild(row);
+    });
   }
 
-  // Global scope functies voor de knoppen
-  window.viewCode = (encodedCode, title) => {
-    document.getElementById('codeArea').textContent = decodeURIComponent(encodedCode);
-    document.getElementById('modalTitle').textContent = "Broncode: " + title;
-    document.getElementById('codeModal').style.display = "block";
-  };
-</script>
-
-<script>
-  function closeModal() {
-    document.getElementById('codeModal').style.display = "none";
+  // Filter functie
+  window.filterLessen = (type) => {
+    const rows = document.querySelectorAll('#tableBody tr');
+    rows.forEach(row => {
+      if (type === 'all' || row.classList.contains(`row-${type.toLowerCase()}`)) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
   }
 </script>
-
-</body>
-</html>
