@@ -3,114 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gedetailleerd Leeroverzicht - HTML</title>
+    <title>Firebase GitHub Tracker</title>
     <style>
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.5;
-            background-color: #f0f2f5;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1100px;
-            margin: auto;
-            background: #fff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        h1 {
-            color: #1a202c;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        p.subtitle {
-            color: #718096;
-            margin-bottom: 30px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th {
-            background-color: #4a5568;
-            color: #fff;
-            text-align: left;
-            padding: 15px;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        td {
-            padding: 15px;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: top;
-            font-size: 14px;
-        }
-        tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-        .tag {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            background: #ebf8ff;
-            color: #2b6cb0;
-        }
-        .inhoud-tekst {
-            color: #4a5568;
-            font-style: italic;
-        }
-        .werkwijze-tekst {
-            color: #2d3748;
-        }
+        :root { --primary: #f57c00; --dark: #2c3e50; --bg: #f4f7f9; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        
+        .input-group { display: flex; gap: 10px; margin-bottom: 30px; padding: 20px; background: #fff3e0; border-radius: 8px; }
+        input { flex-grow: 1; padding: 12px; border: 1px solid #ffcc80; border-radius: 6px; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { background: var(--dark); color: white; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+
+        /* Modal voor Code */
+        #codeModal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        .modal-content { background: #1e1e1e; color: #d4d4d4; margin: 5% auto; padding: 25px; width: 85%; border-radius: 10px; max-height: 80vh; overflow: auto; }
+        pre { white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 13px; }
+        .close { color: white; float: right; cursor: pointer; font-size: 28px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Mijn HTML Leerpad</h1>
-    <p class="subtitle">Een geordend overzicht van lessen, inhoud en de gevolgde werkwijze.</p>
+    <h1>🚀 Mijn Leerpad Tracker</h1>
+    <p>Voeg een GitHub URL toe om de les automatisch te scannen en op te slaan in Firebase.</p>
 
-    <table>
+    <div class="input-group">
+        <input type="text" id="githubUrl" placeholder="https://github.com/gebruiker/repo/blob/main/index.html">
+        <button id="addBtn">Voeg Les Toe</button>
+    </div>
+
+    <table id="lessonTable">
         <thead>
             <tr>
-                <th style="width: 50px;">#</th>
-                <th style="width: 150px;">Onderwerp</th>
-                <th>Korte Inhoud</th>
-                <th>Werkwijze</th>
-                <th style="width: 120px;">Werkvorm</th>
+                <th>Onderwerp</th>
+                <th>Inhoud</th>
+                <th>Vorm</th>
+                <th>Acties</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>01</td>
-                <td><strong>HTML Fundamentals</strong></td>
-                <td class="inhoud-tekst">De basisstructuur van een document: &lt;!DOCTYPE&gt;, &lt;html&gt;, &lt;head&gt; en &lt;body&gt;.</td>
-                <td class="werkwijze-tekst">Stapsgewijze opbouw van een 'skelet' bestand en het begrijpen van de nesting van tags.</td>
-                <td><span class="tag">Theorie</span></td>
-            </tr>
-            <tr>
-                <td>02</td>
-                <td><strong>Tekst & Structuur</strong></td>
-                <td class="inhoud-tekst">Gebruik van H1-H6, paragrafen (&lt;p&gt;) en semantische elementen zoals &lt;main&gt; en &lt;footer&gt;.</td>
-                <td class="werkwijze-tekst">Bestaande tekst omzetten naar een logische HTML-hiërarchie voor betere leesbaarheid en SEO.</td>
-                <td><span class="tag">Oefening</span></td>
-            </tr>
-            <tr>
-                <td>03</td>
-                <td><strong>Lijsten & Tabellen</strong></td>
-                <td class="inhoud-tekst">Geordende (&lt;ol&gt;) en ongeordende (&lt;ul&gt;) lijsten en het structureren van data in &lt;table&gt;.</td>
-                <td class="werkwijze-tekst">Een boodschappenlijst en een lesrooster vertalen naar code-blokken.</td>
-                <td><span class="tag">Interactief</span></td>
-            </tr>
-        </tbody>
+        <tbody id="tableBody">
+            </tbody>
     </table>
 </div>
+
+<div id="codeModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3 id="modalTitle">Broncode</h3>
+        <hr>
+        <pre id="codeArea"></pre>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA3_rzoZOWytlyAbYKKe_WuFlD8z2WvbX4",
+    authDomain: "aangifteq2les1.firebaseapp.com",
+    databaseURL: "https://aangifteq2les1-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "aangifteq2les1",
+    storageBucket: "aangifteq2les1.firebasestorage.app",
+    messagingSenderId: "1071661084879",
+    appId: "1:1071661084879:web:ec81dfed806ad75a8847ba"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const lessonsRef = ref(db, 'lessen');
+
+  // 1. Luisteren naar updates uit Firebase
+  onValue(lessonsRef, (snapshot) => {
+    const data = snapshot.val();
+    const tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = ""; // Leeg de tabel voor herladen
+    
+    if (data) {
+      Object.keys(data).forEach(key => {
+        const lesson = data[key];
+        renderRow(lesson);
+      });
+    }
+  });
+
+  // 2. Les toevoegen functie
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    const url = document.getElementById('githubUrl').value;
+    if(!url) return alert("Plak een link!");
+
+    const rawUrl = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+
+    try {
+      const response = await fetch(rawUrl);
+      const code = await response.text();
+      
+      const titleMatch = code.match(/<title>(.*?)<\/title>/);
+      const title = titleMatch ? titleMatch[1] : "Nieuwe Les";
+      
+      const newLesson = {
+        title: title,
+        inhoud: "Gescand via GitHub",
+        werkwijze: "Automatische import",
+        code: code,
+        url: url,
+        type: "Oefening"
+      };
+
+      push(lessonsRef, newLesson);
+      document.getElementById('githubUrl').value = "";
+    } catch (e) {
+      alert("Fout bij ophalen GitHub code.");
+    }
+  });
+
+  function renderRow(lesson) {
+    const tableBody = document.getElementById('tableBody');
+    const row = tableBody.insertRow();
+    row.innerHTML = `
+      <td><strong>${lesson.title}</strong></td>
+      <td>${lesson.inhoud}</td>
+      <td><span style="background:#eee; padding:3px 8px; border-radius:4px;">${lesson.type}</span></td>
+      <td>
+        <button onclick="viewCode(\`${encodeURIComponent(lesson.code)}\`, '${lesson.title}')" style="background:#0366d6; padding:5px 10px; font-size:12px;">Bekijk Code</button>
+      </td>
+    `;
+  }
+
+  // Global scope functies voor de knoppen
+  window.viewCode = (encodedCode, title) => {
+    document.getElementById('codeArea').textContent = decodeURIComponent(encodedCode);
+    document.getElementById('modalTitle').textContent = "Broncode: " + title;
+    document.getElementById('codeModal').style.display = "block";
+  };
+</script>
+
+<script>
+  function closeModal() {
+    document.getElementById('codeModal').style.display = "none";
+  }
+</script>
 
 </body>
 </html>
